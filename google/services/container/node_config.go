@@ -468,6 +468,11 @@ func schemaNodeConfig() *schema.Schema {
 								Optional:    true,
 								Description: `Controls the maximum number of processes allowed to run in a pod.`,
 							},
+							"insecure_kubelet_readonly_port_enabled": {
+								Type:        schema.TypeBool,
+								Optional:    true,
+								Description: `Enable or disable Kubelet read only port.`,
+							},
 						},
 					},
 				},
@@ -838,6 +843,10 @@ func expandKubeletConfig(v interface{}) *container.NodeKubeletConfig {
 	}
 	cfg := ls[0].(map[string]interface{})
 	kConfig := &container.NodeKubeletConfig{}
+	
+	// Insecure Kubelet Readonly port is enabled by default for now, disable it manually
+	kConfig.InsecureKubeletReadonlyPortEnabled = true
+	
 	if cpuManagerPolicy, ok := cfg["cpu_manager_policy"]; ok {
 		kConfig.CpuManagerPolicy = cpuManagerPolicy.(string)
 	}
@@ -850,6 +859,9 @@ func expandKubeletConfig(v interface{}) *container.NodeKubeletConfig {
 	}
 	if podPidsLimit, ok := cfg["pod_pids_limit"]; ok {
 		kConfig.PodPidsLimit = int64(podPidsLimit.(int))
+	}
+	if insecureKubeletReadonlyPortEnabled, ok := cfg["insecure_kubelet_readonly_port_enabled"]; ok {
+		kConfig.InsecureKubeletReadonlyPortEnabled = insecureKubeletReadonlyPortEnabled.(bool)
 	}
 	return kConfig
 }
@@ -1099,10 +1111,11 @@ func flattenKubeletConfig(c *container.NodeKubeletConfig) []map[string]interface
 	result := []map[string]interface{}{}
 	if c != nil {
 		result = append(result, map[string]interface{}{
-			"cpu_cfs_quota":        c.CpuCfsQuota,
-			"cpu_cfs_quota_period": c.CpuCfsQuotaPeriod,
-			"cpu_manager_policy":   c.CpuManagerPolicy,
-			"pod_pids_limit":       c.PodPidsLimit,
+			"cpu_cfs_quota":                          c.CpuCfsQuota,
+			"cpu_cfs_quota_period":                   c.CpuCfsQuotaPeriod,
+			"cpu_manager_policy":                     c.CpuManagerPolicy,
+			"pod_pids_limit":                         c.PodPidsLimit,
+			"insecure_kubelet_readonly_port_enabled": c.InsecureKubeletReadonlyPortEnabled,
 		})
 	}
 	return result
